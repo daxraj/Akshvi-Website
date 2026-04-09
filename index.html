@@ -788,6 +788,20 @@ section {
   margin: 5px 0;
   transition: all 0.3s;
 }
+.request-access { padding: 120px 48px; max-width: 600px; margin: 0 auto; text-align: center; }
+.request-form { max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; text-align: left; }
+.form-label { font-size: 11px; letter-spacing: 1.5px; color: var(--ivory-muted); margin-bottom: 5px; display: block; }
+.form-label .form-optional { font-size: 10px; color: var(--ivory-whisper); font-style: italic; margin-left: 4px; letter-spacing: 0.5px; }
+.form-input { width: 100%; padding: 13px 16px; background: var(--ivory-breath); border: 1px solid var(--ivory-ghost); border-radius: 8px; color: var(--ivory); font-family: var(--sans); font-size: 13px; font-weight: 300; outline: none; transition: border-color 0.3s; letter-spacing: 0.3px; box-sizing: border-box; }
+.form-input:focus { border-color: var(--ivory-muted); }
+.form-input::placeholder { color: var(--ivory-muted); }
+textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.6; }
+.form-submit { width: 100%; padding: 14px; border: 1px solid var(--ivory-whisper); border-radius: 8px; background: transparent; color: var(--ivory-muted); font-family: var(--sans); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all 0.4s; margin-top: 4px; }
+.form-submit:hover { border-color: var(--ivory-muted); color: var(--ivory); background: var(--ivory-ghost); }
+.form-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+.form-error { color: var(--red-soft); font-size: 11px; text-align: center; min-height: 16px; letter-spacing: 0.5px; }
+@keyframes checkDraw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+@media (max-width: 768px) { .request-access { padding: 80px 24px; } .request-form { max-width: 100%; } }
 </style>
 </head>
 <body>
@@ -1016,6 +1030,47 @@ section {
   </div>
 </div>
 
+<div class="section-divider"></div>
+
+<section class="request-access" id="request-access">
+  <div class="section-label reveal">Request Access</div>
+  <h2 class="section-heading reveal" style="max-width:500px;margin:0 auto 16px;text-align:center;">Tell us a little about yourself.</h2>
+  <p class="section-body reveal" style="max-width:380px;margin:0 auto 48px;text-align:center;">Access to Akshvi is extended personally. If there's a fit, we'll reach out.</p>
+
+  <div class="request-form reveal" id="requestFormArea">
+    <div>
+      <label class="form-label" for="req-name">Full name</label>
+      <input class="form-input" type="text" id="req-name" placeholder="Your name" autocomplete="name">
+    </div>
+    <div>
+      <label class="form-label" for="req-email">Email</label>
+      <input class="form-input" type="email" id="req-email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div>
+      <label class="form-label" for="req-phone">Phone / WhatsApp <span class="form-optional">optional</span></label>
+      <input class="form-input" type="tel" id="req-phone" placeholder="+91" autocomplete="tel">
+    </div>
+    <div>
+      <label class="form-label" for="req-why">What draws you to Akshvi?</label>
+      <textarea class="form-input" id="req-why" placeholder="A sentence or two about your interest in the markets and what you're looking for..."></textarea>
+    </div>
+    <button class="form-submit" id="reqSubmitBtn" onclick="submitAccessRequest()">Request Invitation</button>
+    <div class="form-error" id="reqFormError"></div>
+  </div>
+
+  <div id="reqFormSuccess" style="display:none;text-align:center;padding:20px 0;">
+    <svg width="48" height="48" viewBox="0 0 48 48" style="margin:0 auto 20px;display:block;">
+      <circle cx="24" cy="24" r="22" fill="none" stroke="rgba(160,200,170,0.3)" stroke-width="1"/>
+      <path d="M14 24 L21 31 L34 18" fill="none" stroke="rgba(160,200,170,0.6)" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round"
+            stroke-dasharray="24" stroke-dashoffset="24"
+            style="animation: checkDraw 0.6s ease 0.2s forwards;"/>
+    </svg>
+    <div style="font-family:var(--serif);font-size:22px;font-weight:300;color:var(--ivory);margin-bottom:10px;">Thank you</div>
+    <p style="font-size:13px;color:var(--ivory-muted);line-height:1.7;max-width:300px;margin:0 auto;">We've received your request. If there's a fit, we'll reach out personally.</p>
+  </div>
+</section>
+
 <footer class="footer">
   <div class="footer-main">
     <div class="footer-brand">
@@ -1127,6 +1182,43 @@ function revealOnScroll() {
 }
 window.addEventListener('scroll', revealOnScroll);
 window.addEventListener('load', revealOnScroll);
+
+var ACCESS_API = 'https://dashboard.akshvi.in/api/v1/access-requests';
+function submitAccessRequest() {
+  var name = document.getElementById('req-name').value.trim();
+  var email = document.getElementById('req-email').value.trim();
+  var phone = document.getElementById('req-phone').value.trim();
+  var message = document.getElementById('req-why').value.trim();
+  var errEl = document.getElementById('reqFormError');
+  var btn = document.getElementById('reqSubmitBtn');
+  if (!name) { errEl.textContent = 'Please enter your name'; return; }
+  if (!email || email.indexOf('@') === -1 || email.indexOf('.') === -1) { errEl.textContent = 'Please enter a valid email'; return; }
+  if (!message) { errEl.textContent = 'Please tell us what draws you to Akshvi'; return; }
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  fetch(ACCESS_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name, email: email, phone: phone || null, message: message })
+  }).then(function(response) {
+    if (response.ok) {
+      document.getElementById('requestFormArea').style.display = 'none';
+      var success = document.getElementById('reqFormSuccess');
+      success.style.display = 'block';
+      success.style.opacity = '0';
+      success.style.transform = 'translateY(12px)';
+      success.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      setTimeout(function() { success.style.opacity = '1'; success.style.transform = 'translateY(0)'; }, 50);
+    } else {
+      response.json().then(function(data) { errEl.textContent = data.detail || 'Something went wrong. Please try again.'; }).catch(function() { errEl.textContent = 'Something went wrong. Please try again.'; });
+      btn.disabled = false; btn.textContent = 'Request Invitation';
+    }
+  }).catch(function() {
+    errEl.textContent = 'Unable to connect. Please try again later.';
+    btn.disabled = false; btn.textContent = 'Request Invitation';
+  });
+}
 </script>
 
 </body>
